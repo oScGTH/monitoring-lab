@@ -27,3 +27,10 @@ and multiple monitored endpoints across Linux and Windows systems.
 - Reproducible setup
 - Easy verification of system health and incidents
 
+### Prometheus – Monitoring Engine
+
+- Pull-based metrics collection
+- Targets expose a `/metrics` endpoint
+- TSDB stores historical data
+- PromQL used for querying
+- UI available on port 9090
