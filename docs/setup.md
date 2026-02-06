@@ -42,6 +42,7 @@ scrape_configs:
   - job_name: "windows_exporter"
     static_configs:
       - targets: ["<windows-ip>:9182"]
+```
 
 ## Firewall configuration (Windows)
 
