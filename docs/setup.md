@@ -1,31 +1,78 @@
-### Prometheus Installation
+# Setup Documentation
 
-On the monitoring server (Fedora), Prometheus was manually installed from
-the official binary release. A dedicated service user (`prometheus`) was created,
-and Prometheus was configured to run under systemd.
+This document outlines how the monitoring stack is installed
+and configured on the monitoring server and targets.
 
-The Prometheus service listens on port 9090 and scrapes configured targets.
+---
 
-## Exporters Setup
+## Prometheus Installation
 
-### Node Exporter
+Prometheus is installed manually on the Fedora monitoring server.
+A dedicated user runs the Prometheus service, and the binary is
+placed in `/usr/local/bin`.
 
-Node Exporter is installed on all Linux targets. It runs as a dedicated user
-and systemd service, exposing metrics on port 9100. It provides metrics for:
-- CPU utilization
-- Memory usage
-- Disk usage
-- Network statistics
+The main configuration file is:
+``` /etc/prometheus/prometheus.yml ```
 
-### Windows Exporter
+---
 
-Windows Exporter runs as a Windows service and exposes metrics on port 9182.
-Ensure that the Windows Firewall allows inbound connections on this port. Example
-PowerShell firewall rule:
+## Exporters and Prometheus Scraping
 
-```powershell
-New-NetFirewallRule -DisplayName "Allow Windows Exporter" \
-  -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow ```
+Prometheus collects metrics from targets by scraping
+HTTP endpoints exposed by exporters.
 
-Prometheus scrapes both exporters according to its configuration in
-/etc/prometheus/prometheus.yml
+Example `scrape_configs` from `prometheus.yml`:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+rule_files:
+  - "rules/alerts.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["localhost:9100"]
+
+  - job_name: "windows_exporter"
+    static_configs:
+      - targets: ["<windows-ip>:9182"]
+
+## Firewall configuration (Windows)
+
+Windows Firewall must allow inbound TCP 9182:
+
+```
+New-NetFirewallRule -DisplayName "Allow Windows Exporter" `
+  -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow
+```
+
+## Alert Rules
+Alert rules are defined in:
+
+``` /etc/prometheus/rules/alerts.yml ```
+
+They are loaded by Prometheus using the rule_files: directive.
+
+The rules include thresholds for CPU, memory, and disk usage.
+
+## Alertmanager Setup
+
+Alertmanager is installed on the monitoring server:
+
+Binary located at /usr/local/bin/alertmanager
+
+Config file at /etc/alertmanager/alertmanager.yml
+
+Runs as a systemd service
+
+Alertmanager listens on port 9093 by default and receives
+alerts from Prometheus.
+
+
+---
